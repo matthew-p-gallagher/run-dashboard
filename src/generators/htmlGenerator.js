@@ -13,6 +13,7 @@ class HTMLGenerator {
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <style>
         body { 
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -38,7 +39,7 @@ class HTMLGenerator {
             margin-top: 5px;
         }
         #map { 
-            height: 400px; 
+            height: 500px; 
             margin-bottom: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -126,22 +127,64 @@ class HTMLGenerator {
     </div>
     <script>
         // Initialize map
-        const map = L.map('map').setView([${coordinates[0][0]}, ${coordinates[0][1]}], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+        const map = L.map('map', {
+            zoomControl: true,
+            scrollWheelZoom: true
+        }).setView([${coordinates[0][0]}, ${coordinates[0][1]}], 14);
+        
+        // Add map layer - CARTO Light theme
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap contributors, © CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
         }).addTo(map);
 
         // Add route to map
         const routePoints = ${JSON.stringify(coordinates)};
-        L.polyline(routePoints, {
+        
+        // Smooth points using moving average
+        const smoothPoints = (() => {
+            const windowSize = 5; // Size of the moving window
+            const smoothed = [];
+            
+            for (let i = 0; i < routePoints.length; i++) {
+                let windowStart = Math.max(0, i - Math.floor(windowSize / 2));
+                let windowEnd = Math.min(routePoints.length, i + Math.floor(windowSize / 2));
+                let lat = 0, lng = 0;
+                let count = 0;
+                
+                for (let j = windowStart; j < windowEnd; j++) {
+                    lat += routePoints[j][0];
+                    lng += routePoints[j][1];
+                    count++;
+                }
+                
+                smoothed.push([lat / count, lng / count]);
+            }
+            return smoothed;
+        })();
+
+        L.polyline(smoothPoints, {
             color: '#FF4500',
             weight: 4,
-            opacity: 0.8
+            opacity: 0.8,
+            smoothFactor: 1.5
         }).addTo(map);
 
-        // Fit bounds
+        // Add start and end markers using original points for accuracy
+        L.marker(routePoints[0], {
+            title: 'Start'
+        }).addTo(map);
+        
+        L.marker(routePoints[routePoints.length - 1], {
+            title: 'End'
+        }).addTo(map);
+
+        // Fit bounds with padding
         const bounds = L.latLngBounds(routePoints);
-        map.fitBounds(bounds);
+        map.fitBounds(bounds, {
+            padding: [50, 50]
+        });
 
         // Create elevation chart
         const elevCtx = document.getElementById('elevationChart').getContext('2d');
