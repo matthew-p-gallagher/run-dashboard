@@ -1,0 +1,28 @@
+{
+  "name": "strava-run-dashboard",
+  "version": "1.0.0",
+  "description": "A dashboard for analyzing GPX run data",
+  "main": "analyzeGPX.js",
+  "scripts": {
+    "start": "node analyzeGPX.js",
+    "dev": "nodemon analyzeGPX.js",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@tmcw/togeojson": "^5.8.1",
+    "@xmldom/xmldom": "^0.8.10",
+    "leaflet": "^1.9.4",
+    "chart.js": "^4.4.1",
+    "geolib": "^3.3.4"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "nodemon": "^3.0.3",
+    "prettier": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
